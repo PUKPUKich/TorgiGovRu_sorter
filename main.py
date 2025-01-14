@@ -43,14 +43,31 @@ def show_lots(filtered_lots):
     results_window = tk.Toplevel()
     results_window.title("Результаты сортировки")
 
-    tree = ttk.Treeview(results_window, columns=("name", "novelty", "link"), show="headings")
+    # Рамка для таблицы и скроллбаров
+    frame = tk.Frame(results_window)
+    frame.pack(fill=tk.BOTH, expand=True)
+
+    # Создаем Treeview с колонками
+    tree = ttk.Treeview(frame, columns=("name", "novelty", "link"), show="headings")
     tree.heading("name", text="Название")
     tree.heading("novelty", text="Новизна")
     tree.heading("link", text="Ссылка")
 
-    tree.column("name", width=400)
-    tree.column("novelty", width=100)
-    tree.column("link", width=500)
+    tree.column("name", width=400, anchor="w")
+    tree.column("novelty", width=100, anchor="center")
+    tree.column("link", width=500, anchor="w")
+
+    # Создаем вертикальный скроллбар
+    vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+    vsb.pack(side=tk.RIGHT, fill=tk.Y)
+
+    # Создаем горизонтальный скроллбар
+    hsb = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+    hsb.pack(side=tk.BOTTOM, fill=tk.X)
+
+    # Привязываем скроллбары к таблице
+    tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+    tree.pack(fill=tk.BOTH, expand=True)
 
     def open_link(event):
         selected_item = tree.focus()
@@ -59,21 +76,24 @@ def show_lots(filtered_lots):
             link = values[2]
             webbrowser.open(link)
 
+    # Заполняем таблицу данными
     for lot in filtered_lots:
         name = lot.get("lotName", "Не указано")
         lot_id = lot.get("id", "Не указано")
-        link = f"https://torgi.gov.ru/new/public/lots/lot/id/{lot_id}?fromRec=false"
+        link = f"https://torgi.gov.ru/new/public/lots/lot/{lot_id}?fromRec=false"
 
         bidd_end_time = lot.get("biddEndTime", "Не указано")
         novelty = calculate_novelty(bidd_end_time)
 
         tree.insert("", "end", values=(name, novelty, link))
 
+    # Привязываем событие двойного клика для открытия ссылки
     tree.bind("<Double-1>", open_link)
-    tree.pack(fill=tk.BOTH, expand=True)
 
+    # Кнопка для закрытия окна
     close_button = tk.Button(results_window, text="Закрыть", command=results_window.destroy)
     close_button.pack(pady=10)
+
 
 def open_file(percentage):
     file_path = filedialog.askopenfilename(title="Выберите файл JSON", filetypes=[("JSON files", "*.json")])
